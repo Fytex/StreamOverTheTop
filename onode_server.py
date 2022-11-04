@@ -15,9 +15,7 @@ class BootStrap:
         self.ips_adjacents = ips_adjacents
 
     def run(self):
-        with open(JSON_file) as f:
-            data = json.load(f)
-
+        
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
 
@@ -30,35 +28,34 @@ class BootStrap:
 
     def talk_to_conn(self, conn, addr):
         with conn:
-            data = json.dumps(ips_adjacents[addr])
+            data = json.dumps(self.ips_adjacents[addr])
             conn.sendall(data)
 
 
 
 class ONode_Server:
-    def __init__(self):
-        self.adjacents = []
-        pass
+    def __init__(self, adjacents):
+        self.adjacents = adjacents
 
     def run(self):
         pass
 
     def flood(self):
-        for adj_addr in adjacents:
+        for adj_addr in self.adjacents:
             
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((adj_addr, PORT))
 
-                data = json.dumps((0, datetime.utcnow().strftime(DATETIME_FMT)))
+                data = json.dumps((HOST, 0, datetime.utcnow().strftime(DATETIME_FMT)))
                 s.sendall(data)
 
     
-    
-        
-
-
 
 def main():
-    Thread(target=BootStrap(ips_adjacents).run).start()
-                
+    with open(JSON_FILE) as f:
+        ips_adjacents = json.load(f)
         
+    server_adjacents = ips_adjacents[HOST]
+    
+    Thread(target=BootStrap(ips_adjacents).run).start()
+    Thread(target=ONode_Server(ips_adjacents).flood).start()
