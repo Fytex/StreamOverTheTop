@@ -36,6 +36,7 @@ class BootStrap:
 class ONode_Server:
     def __init__(self, adjacents):
         self.adjacents = adjacents
+        self.server = Server(HOST, PORT)
 
     def run(self):
         pass
@@ -59,3 +60,8 @@ def main():
     
     Thread(target=BootStrap(ips_adjacents).run).start()
     Thread(target=ONode_Server(ips_adjacents).flood).start()
+
+
+if __name__ == '__main__':
+    main()
+
