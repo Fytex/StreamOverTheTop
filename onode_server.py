@@ -1,65 +1,155 @@
+import sys
 import json
 import socket
 
-from threading import Thread
+
+
+from time import sleep
 from datetime import datetime
+from socket import error as SocketError
+from threading import Thread, Lock, Event
 
-HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
-PORT = 65000  # Port to listen on (non-privileged ports are > 1023)
-JSON_FILE = ""
+from onode import ONode, FLOOD_PORT, BOOTSTRAP_IP, DATETIME_FMT
 
-DATETIME_FMT = '%m/%d/%y %H:%M:%S.%f'
+from stream_service.Servidor import Servidor
 
-class BootStrap:
-    def __init__(self, ips_adjacents):
-        self.ips_adjacents = ips_adjacents
 
-    def run(self):
+
+IS_MAIN_NODE = False
+
+STREAM = sys.argv[2]
+
+
+
+
+class ONode_Server(ONode):
+
+    #Overwrite
+    def __init__(self, info):
+        super().__init__()
+
+        self.info = info
+
+    
+    #Overwrite
+    def connect_bootstrap(self):
+        if IS_MAIN_NODE:
+            self.load_info(self.info, STREAM)
+        else:
+            super().connect_bootstrap(STREAM)
+
+    #Overwrite
+    def process_flood_info_node(self, addr, version=None):
+        if version is None:
+            version = self.routing_tables[STREAM].get_current_version()
         
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind((HOST, PORT))
+        # 'datetime_origin' will be added before sent
+        info = {
+            'type': 'Server',
+            'value': {
+                'path': [self.addr],
+                'stream': STREAM,
+                'delta_server': 0,
+                'version': version
+            }
+        }
 
-            while True:
-                conn, addr = s.accept()
+        
+        self.flood_info_adj(addr, info)
 
-                Thread(target=self.talk_to_conn, args=(conn, addr)).start()
-
-                
-
-    def talk_to_conn(self, conn, addr):
-        with conn:
-            data = json.dumps(self.ips_adjacents[addr])
-            conn.sendall(data)
-
-
-
-class ONode_Server:
-    def __init__(self, adjacents):
-        self.adjacents = adjacents
-        self.server = Server(HOST, PORT)
-
-    def run(self):
+    #Overwrite
+    def process_flood_info_server(self, *args, **kwargs):
         pass
 
-    def flood(self):
-        for adj_addr in self.adjacents:
-            
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((adj_addr, PORT))
 
-                data = json.dumps((HOST, 0, datetime.utcnow().strftime(DATETIME_FMT)))
-                s.sendall(data)
+
+    def _pre_flood_and_monitor(self):
+        threads = []
+        version = 0
+        all_adjacents = self.adjacents.get_all()
+        
+        for adj_addr in all_adjacents:
+                t = Thread(target=self.process_flood_info_node, args=(adj_addr, version))
+                threads.append(t)
+                t.start()
+
+
+        
+        while True:
+            sleep(10)
+            version += 1
+            
+            for adj_addr in self.adjacents.get_actives():
+                idx = all_adjacents.index(adj_addr)
+                
+                if not threads[idx].is_alive():
+                    t = Thread(target=self.process_flood_info_node, args=(adj_addr, version))
+                    threads[idx] = t
+                    t.start()
+            
+
+
+    #Overwrite
+    def pre_flood_all(self):
+        Thread(target=self._pre_flood_and_monitor).start()
+    
+    
+
+        
+    '''
+
+    Run
+
+    '''
+
+    #Overwrite
+    def run(self):
+        
+        routing_table = self.routing_tables[STREAM]
+
+        stream_service = Servidor().main(STREAM, self.addr, routing_table.port)
+        self.run_stream(routing_table)
+        
+        #s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #s.bind((self.addr, routing_table.port))
+        print(f"Enviando... {id(routing_table)} - {routing_table}")
+        '''
+        while True:
+            for next_addr in routing_table.get_next_nodes():
+                s.sendto(f"{STREAM}: Sent...".encode(), (next_addr, routing_table.port))
+                sleep(1)
+        '''
+        '''
+        for next_addr in self.adjacents.get_all():
+            stream_service = Servidor().main(STREAM, next_addr, routing_table.port)
+        '''
+
+                
 
     
 
 def main():
-    with open(JSON_FILE) as f:
-        ips_adjacents = json.load(f)
+    info = {}
+
+    try:
+        arg = sys.argv[3]
+    except IndexError:
+        pass
+    else:
+        assert(arg == 'bootstrap')
+
+        global IS_MAIN_NODE
+        IS_MAIN_NODE = True
+
+        bootstrap = __import__('bootstrap').BootStrap(BOOTSTRAP_IP)
+        Thread(target=bootstrap.run).start()
         
-    server_adjacents = ips_adjacents[HOST]
+        info = bootstrap.get_node_info(BOOTSTRAP_IP)
+
+
+    print("Run Server")
     
-    Thread(target=BootStrap(ips_adjacents).run).start()
-    Thread(target=ONode_Server(ips_adjacents).flood).start()
+    ONode_Server(info).start()
 
 
 if __name__ == '__main__':
