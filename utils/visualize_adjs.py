@@ -28,7 +28,6 @@ node_color = {k: colors[k[0]] for k in adjacents.keys()}
 
 
 
-netgraph.InteractiveGraph(graph, node_labels=node_labels, node_color=node_color, node_size=5, arrows=True, edge_width=3)
+plot = netgraph.InteractiveGraph(graph, node_labels=node_labels, node_color=node_color, node_size=5, arrows=True, edge_width=3)
 
-plt.title('Adjacents')
 plt.show()
