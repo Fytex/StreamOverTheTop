@@ -71,7 +71,8 @@ class RoutingTable:
 
             def check():
                 return len(self.path) > len(new_path)
-            
+            print(self.path)
+            print(new_path)
             if not check():
                 
                 # Propagate if restarted or monitorization

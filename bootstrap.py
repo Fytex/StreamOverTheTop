@@ -8,8 +8,7 @@ JSON_FILE = "ips_adj.json"
 BOOTSTRAP_PORT = 65000
 
 STREAM_PORTS = {
-    'movie.Mjpeg': 65522,
-    'haha.Mjpeg': 65523
+    'movie.Mjpeg': 65522
 }
 
 class BootStrap:

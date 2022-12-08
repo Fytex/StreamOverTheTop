@@ -179,14 +179,12 @@ class ONode:
 
 
 
-        if not routing_table.is_available():
-                return
-        
         print(f"Status {info['value']['status']} - {id(routing_table)}")
-
+        has_updated = False
             
         if status:
-            has_updated = routing_table.add(addr)
+            if routing_table.is_available():
+                has_updated = routing_table.add(addr)
         else:
             has_updated = routing_table.remove(addr)
             
@@ -320,19 +318,23 @@ class ONode:
         s.settimeout(TIMEOUT)
 
         while True:
+            
             try:
                 pkg, addr_port = s.recvfrom(20480)
             except socket.timeout:
                 prev_node = routing_table.get_prev_node()
-                if prev_node:
+                if prev_node and routing_table.get_next_nodes():
                     routing_table.disabled_node(prev_node)
+                    Thread(target=self.update_stream_from_node, args=(routing_table.stream, prev_node, 0)).start()
                     self.pre_flood_all()
                 continue
                     
             addr, _ = addr_port
             #print(f"Traffic: {addr}: {pkg}")
+
             print(routing_table.get_next_nodes())
             nodes = routing_table.get_next_nodes()
+            
             if not nodes and addr != self.addr: # addr != self.addr is for server loopback
                 Thread(target=self.update_stream_from_node, args=(routing_table.stream, addr, 0)).start()
             for next_addr in nodes:
