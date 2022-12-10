@@ -210,6 +210,8 @@ class ONode:
     def process_flood_info_server(self, routing_table, info, addr):
         value = info['value']
         value['path'].append(self.addr)
+        
+        server = value['path'][0]
 
         update_status, old_prev_node = routing_table.update(value)
 
@@ -217,8 +219,8 @@ class ONode:
             
 
         if update_status:
-            if ((update_status == UpdateStatus.UPDATED and old_prev_node != addr) or        \
-                (update_status == UpdateStatus.RESTARTED and old_prev_node == addr)         \
+            if ((update_status == UpdateStatus.UPDATED and old_prev_node != addr) or           \
+                (update_status == UpdateStatus.RESTARTED and old_prev_node == addr == server)  \
             ) and routing_table.get_next_nodes():
                 self.update_stream_from_node(routing_table.stream, addr, 1)
 

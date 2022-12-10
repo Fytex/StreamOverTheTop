@@ -67,10 +67,15 @@ class RoutingTable:
         
         
         if self.path:
+            new_prev_node = new_path[-2]
             current_version = self.versions.get(new_server)
 
+            if old_prev_node == new_prev_node:
+                self.path = new_path
+
             def check():
-                return len(self.path) > len(new_path)
+                return old_prev_node != new_prev_node and \
+                       (len(self.path) > len(new_path))
             print(self.path)
             print(new_path)
             if not check():
