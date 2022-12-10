@@ -63,6 +63,8 @@ class RoutingTable:
         new_version = value['version']
         new_server = new_path[0]
 
+        new_delta_server = value['delta_server']
+
         old_prev_node = self.prev_node
         
         
@@ -72,6 +74,7 @@ class RoutingTable:
 
             if old_prev_node == new_prev_node:
                 self.path = new_path
+                self.delta_server = new_delta_server
 
             def check():
                 return old_prev_node != new_prev_node and \
@@ -97,6 +100,7 @@ class RoutingTable:
         
         self.path = new_path.copy()
         self.versions[new_server] = new_version
+        self.delta_server = new_delta_server
         
         return (UpdateStatus.UPDATED, old_prev_node)
 

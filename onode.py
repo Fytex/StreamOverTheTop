@@ -213,6 +213,15 @@ class ONode:
         
         server = value['path'][0]
 
+        datetime_origin = datetime.strptime(value['datetime_origin'], DATETIME_FMT)
+        datetime_current = datetime.utcnow()
+        delta = datetime_current - datetime_origin
+
+        delta_micro = int(delta.total_seconds()) * 1000000 + delta.microseconds
+        
+        value['delta_server'] += delta_micro
+        
+
         update_status, old_prev_node = routing_table.update(value)
 
         
