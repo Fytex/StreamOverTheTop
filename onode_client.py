@@ -26,15 +26,7 @@ class ONodeClient(ONode):
 
         prev_addr = info['value']['path'][-2] # -1 is this node
 
-        info = {
-            'type': 'Client',
-            'value': {
-                'stream': STREAM,
-                'status': 1
-            }
-        }
-
-        self.flood_info_adj(prev_addr, info)
+        self.update_stream_from_node(STREAM, prev_addr, 1)
 
     #Overwrite
     def process_flood_info_client(self, *args, **kwargs):
