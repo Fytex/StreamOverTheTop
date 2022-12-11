@@ -39,9 +39,7 @@ class ONode_Server(ONode):
             super().connect_bootstrap(STREAM)
 
     #Overwrite
-    def process_flood_info_node(self, addr, version=None):
-        if version is None:
-            version = self.routing_tables[STREAM].get_current_version()
+    def process_flood_info_node(self, addr):
         
         # 'datetime_origin' will be added before sent
         info = {
@@ -49,8 +47,7 @@ class ONode_Server(ONode):
             'value': {
                 'path': [self.addr],
                 'stream': STREAM,
-                'delta_server': 0,
-                'version': version
+                'delta_server': 0
             }
         }
 
@@ -65,11 +62,10 @@ class ONode_Server(ONode):
 
     def _pre_flood_and_monitor(self):
         threads = []
-        version = 0
         all_adjacents = self.adjacents.get_all()
         
         for adj_addr in all_adjacents:
-                t = Thread(target=self.process_flood_info_node, args=(adj_addr, version))
+                t = Thread(target=self.process_flood_info_node, args=(adj_addr,))
                 threads.append(t)
                 t.start()
 
@@ -77,13 +73,12 @@ class ONode_Server(ONode):
         
         while True:
             sleep(10)
-            version += 1
             
             for adj_addr in self.adjacents.get_actives():
                 idx = all_adjacents.index(adj_addr)
                 
                 if not threads[idx].is_alive():
-                    t = Thread(target=self.process_flood_info_node, args=(adj_addr, version))
+                    t = Thread(target=self.process_flood_info_node, args=(adj_addr,))
                     threads[idx] = t
                     t.start()
             

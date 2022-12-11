@@ -101,8 +101,7 @@ class ONode:
             self.routing_tables[server_stream].update({
                 'path': [self.addr],
                 'stream': server_stream,
-                'delta_server': 0,
-                'version': 0
+                'delta_server': 0
             })
 
 
@@ -210,8 +209,6 @@ class ONode:
     def process_flood_info_server(self, routing_table, info, addr):
         value = info['value']
         value['path'].append(self.addr)
-        
-        server = value['path'][0]
 
         datetime_origin = datetime.strptime(value['datetime_origin'], DATETIME_FMT)
         datetime_current = datetime.utcnow()
@@ -228,9 +225,7 @@ class ONode:
             
 
         if update_status:
-            if ((update_status == UpdateStatus.UPDATED and old_prev_node != addr) or           \
-                (update_status == UpdateStatus.RESTARTED and old_prev_node == addr == server)  \
-            ) and routing_table.get_next_nodes():
+            if (update_status == UpdateStatus.UPDATED and old_prev_node != addr) and routing_table.get_next_nodes():
                 self.update_stream_from_node(routing_table.stream, addr, 1)
 
                 
