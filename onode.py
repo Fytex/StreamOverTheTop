@@ -226,8 +226,11 @@ class ONode:
             
 
         if update_status:
-            if (update_status == UpdateStatus.UPDATED and old_prev_node != addr) and routing_table.get_next_nodes():
+            if update_status == UpdateStatus.UPDATED and routing_table.get_next_nodes():
                 self.update_stream_from_node(routing_table.stream, addr, 1)
+
+                global _DEBUG_OLD_NODES
+                _DEBUG_OLD_NODES = []
 
                 
             if update_status == UpdateStatus.UPDATED and old_prev_node:
@@ -349,25 +352,28 @@ class ONode:
                 continue
                     
             addr, _ = addr_port
+            prev_node = routing_table.get_prev_node() # None if Server
 
-            nodes = routing_table.get_next_nodes()
+            if prev_node is None or addr == prev_node:
 
-            if nodes != _DEBUG_OLD_NODES:
-                _DEBUG_OLD_NODES = nodes
-                print(f"({self.addr}) Traffic: Receiving from {addr} - Sending to: {nodes}")
+                nodes = routing_table.get_next_nodes()
+
+                if nodes != _DEBUG_OLD_NODES:
+                    _DEBUG_OLD_NODES = nodes
+                    print(f"({self.addr}) Traffic: Receiving from {addr} - Sending to: {nodes}")
             
-            if not nodes and addr != self.addr: # addr != self.addr is for server loopback
-                Thread(target=self.update_stream_from_node, args=(routing_table.stream, addr, 0)).start()
-            for next_addr in nodes:
-                s.sendto(pkg, (next_addr, routing_table.port))
+                if not nodes and addr != self.addr: # addr != self.addr is for server loopback
+                    Thread(target=self.update_stream_from_node, args=(routing_table.stream, addr, 0)).start()
+                for next_addr in nodes:
+                    s.sendto(pkg, (next_addr, routing_table.port))
 
     def stop(self):
         threads = []
         for stream, routing_table in self.routing_tables.items():
             prev_node = routing_table.prev_node # Force access
             next_nodes = routing_table.next_nodes # Force access
-            print(f"({self.addr}) Closing {stream} from {prev_node}")
             if prev_node and next_nodes:
+                print(f"({self.addr}) Closing {stream} from {prev_node}")
                 t = Thread(target=self.update_stream_from_node, args=(stream, prev_node, 0))
                 t.start()
                 threads.append(t)
