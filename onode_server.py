@@ -104,20 +104,7 @@ class ONode_Server(ONode):
 
         stream_service = Servidor().main(STREAM, self.addr, routing_table.port)
         self.run_stream(routing_table)
-        
-        #s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        #s.bind((self.addr, routing_table.port))
-        print(f"Enviando... {id(routing_table)} - {routing_table}")
-        '''
-        while True:
-            for next_addr in routing_table.get_next_nodes():
-                s.sendto(f"{STREAM}: Sent...".encode(), (next_addr, routing_table.port))
-                sleep(1)
-        '''
-        '''
-        for next_addr in self.adjacents.get_all():
-            stream_service = Servidor().main(STREAM, next_addr, routing_table.port)
-        '''
+
 
                 
 
@@ -142,7 +129,7 @@ def main():
         info = bootstrap.get_node_info(BOOTSTRAP_IP)
 
 
-    print("Run Server")
+    print("Server: Running")
     
     ONode_Server(info).start()
 

@@ -52,7 +52,7 @@ class Servidor:
 		rtpPacket = RtpPacket()
 		
 		rtpPacket.encode(version, padding, extension, cc, seqnum, marker, pt, ssrc, payload)
-		print("Encoding RTP Packet: " + str(seqnum))
+		#print("Encoding RTP Packet: " + str(seqnum))
 		
 		return rtpPacket.getPacket()
 
@@ -72,7 +72,7 @@ class Servidor:
 		# socket
 		self.clientInfo['rtpPort'] = port
 		self.clientInfo['rtpAddr'] = socket.gethostbyname(ip)
-		print("Sending to Addr:" + self.clientInfo['rtpAddr'] + ":" + str(self.clientInfo['rtpPort']))
+		#print("Sending to Addr:" + self.clientInfo['rtpAddr'] + ":" + str(self.clientInfo['rtpPort']))
 		# Create a new socket for RTP/UDP
 		self.clientInfo["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.clientInfo['event'] = threading.Event()

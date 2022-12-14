@@ -13,6 +13,14 @@ STREAM = sys.argv[2]
 
 class ONodeClient(ONode):
 
+    # Overwrite
+    def connect_bootstrap(self, *args, **kwargs):
+        super().connect_bootstrap(*args, **kwargs)
+        
+        if STREAM not in self.stream_ports:
+            print(f"Stream ({STREAM}) doesn't exist")
+            _exit(0)
+
     '''
 
     Flood
@@ -53,15 +61,6 @@ class ONodeClient(ONode):
 
     # Overwrite
     def run(self):
-        '''
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.bind((self.addr, self.stream_ports[STREAM]))
-
-        while True:
-            pkg, addr_port = s.recvfrom(4096)
-            print(f"Traffic: {addr_port[0]}: {pkg}")
-        '''
-        print(f"---------------\n\n\n{self.addr} - {self.stream_ports[STREAM]}\n\n\n")
         routing_table = self.routing_tables[STREAM]
 
         routing_table.add('127.0.0.1')

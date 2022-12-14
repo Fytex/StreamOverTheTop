@@ -64,14 +64,11 @@ class RoutingTable:
                 return (UpdateStatus.MONITOR, None)
 
             def check():
-                print(f"\n\n\n\n\n\n\n\n\n{self.delta_server}\n{new_delta_server}\n\n\n\n\n")
                 if self.delta_server < TIME_MIN_MARGIN and new_delta_server < TIME_MIN_MARGIN:
                     return len(self.path) > len(new_path)
 
                 
                 boost = (self.delta_server - new_delta_server) / self.delta_server
-
-                print(f"\n\n\n\n\n\n{boost}\nOld:{self.delta_server}\nNew:{new_delta_server}\n\n\n\n\n\n")
 
                 if boost > BOOST_STD_DEV:
                     return True
@@ -79,14 +76,11 @@ class RoutingTable:
                     return len(self.path) > len(new_path)
                 else:
                     return False
+
             
-            print(self.path)
-            print(new_path)
             if not check():
                     return (UpdateStatus.NOTHING, None)
 
-
-        print(f"\n\n\n\nUPDATED\n\n\n\n{new_path}\n\n\n\n\n")
         
         self.path = new_path.copy()
         self.delta_server = new_delta_server

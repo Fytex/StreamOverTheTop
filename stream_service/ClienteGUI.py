@@ -90,7 +90,7 @@ class ClienteGUI:
                                                 rtpPacket.decode(data)
 					
                                                 currFrameNbr = rtpPacket.seqNum()
-                                                print("Current Seq Num: " + str(currFrameNbr))
+                                                #print("Current Seq Num: " + str(currFrameNbr))
 										
                                                 #if currFrameNbr > self.frameNbr: # Discard the late packet
                                                 self.frameNbr = currFrameNbr
@@ -132,7 +132,7 @@ class ClienteGUI:
 		try:
 			# Bind the socket to the address using the RTP port
 			self.rtpSocket.bind((self.addr, self.port))
-			print('\nBind \n')
+			#print('\nBind \n')
 		except:
 			tkMessageBox.showwarning('Unable to Bind', 'Unable to bind PORT=%d' %self.rtpPort)
 

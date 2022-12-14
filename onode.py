@@ -19,6 +19,8 @@ TIMEOUT = 5
 
 DATETIME_FMT = '%m/%d/%y %H:%M:%S.%f'
 
+_DEBUG_OLD_NODES = []
+
 class Adjacents:
     def __init__(self, adjacents=None):
         if adjacents is None:
@@ -49,7 +51,7 @@ class Adjacents:
         return self.adjacents
 
     def __repr__(self):
-        return f"Adjacents({self.adjacents})"
+        return str(self.adjacents)
 
 
 class ONode:
@@ -65,7 +67,7 @@ class ONode:
 
     def load(self):
         self.connect_bootstrap()
-        print("Got adjacents  -> " + str(self.adjacents))
+        print(f"({self.addr}) Adjacents: " + str(self.adjacents))
         self.flood()
 
 
@@ -98,6 +100,11 @@ class ONode:
             self.routing_tables[stream] = RoutingTable(stream, port)
         
         if server_stream: # Server only
+            if server_stream not in self.stream_ports:
+                print(f"Stream ({STREAM}) doesn't exist")
+                _exit(0)
+
+            
             self.routing_tables[server_stream].update({
                 'path': [self.addr],
                 'stream': server_stream,
@@ -126,7 +133,6 @@ class ONode:
             s.listen()
             
             while True:
-                print("Listening " + self.addr + ":" + str(FLOOD_PORT))
                 conn, addr_port = s.accept()
                 Thread(target=self.process_flood_info, args=(conn, addr_port[0])).start()
 
@@ -142,8 +148,6 @@ class ONode:
         node_type = info['type']
         value = info['value']
 
-        print(f"Received Info from {addr}: {info}")
-
         if node_type == 'Node':
             self.process_flood_info_node(addr)
         else:
@@ -157,8 +161,6 @@ class ONode:
                 self.process_flood_info_server(routing_table, info, addr)
             else:
                 raise Exception(f"{node_type} not exepcted")
-
-            print(routing_table)
 
 
     def process_flood_info_client(self, routing_table, info, addr):
@@ -177,8 +179,6 @@ class ONode:
             return
 
 
-
-        print(f"Status {info['value']['status']} - {id(routing_table)}")
         has_updated = False
             
         if status:
@@ -213,15 +213,9 @@ class ONode:
         datetime_origin = datetime.strptime(value['datetime_origin'], DATETIME_FMT)
         datetime_current = datetime.utcnow()
         delta = datetime_current - datetime_origin
-
-        print(datetime_origin)
-        print(datetime_current)
         
 
         delta_micro = int(delta.total_seconds()) * 1000000 + delta.microseconds
-        print(delta.total_seconds())
-        print(delta.microseconds)
-        print(delta_micro)
         
         value['delta_server'] += delta_micro
         
@@ -252,7 +246,7 @@ class ONode:
             
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((self.addr, 0))
-            print(f"Connecting to {adj_addr} from {self.addr}")
+
             connected = False
             start_time = perf_counter()
 
@@ -285,7 +279,6 @@ class ONode:
                 info['value']['datetime_origin'] = datetime.utcnow().strftime(DATETIME_FMT)
             
             data = json.dumps(info)
-            print(data)
             s.sendall(data.encode())
 
 
@@ -326,6 +319,8 @@ class ONode:
             Thread(target=self.run_stream, args=(routing_table, )).start()
 
     def run_stream(self, routing_table):
+        global _DEBUG_OLD_NODES
+        
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.bind((self.addr, routing_table.port))
 
@@ -337,17 +332,29 @@ class ONode:
                 pkg, addr_port = s.recvfrom(20480)
             except socket.timeout:
                 prev_node = routing_table.get_prev_node()
+                
                 if prev_node and routing_table.get_next_nodes():
+                    _DEBUG_OLD_NODES = []
+                    print(f"({self.addr}) Traffic: Previous node {prev_node} failed... Probably dead...")
                     routing_table.disabled_node(prev_node)
                     Thread(target=self.update_stream_from_node, args=(routing_table.stream, prev_node, 0)).start()
                     self.pre_flood_all()
+
+                elif _DEBUG_OLD_NODES:
+                    _DEBUG_OLD_NODES = []
+                    print(f"({self.addr}) Traffic: Stopped")
+
+
+
                 continue
                     
             addr, _ = addr_port
-            #print(f"Traffic: {addr}: {pkg}")
 
-            print(routing_table.get_next_nodes())
             nodes = routing_table.get_next_nodes()
+
+            if nodes != _DEBUG_OLD_NODES:
+                _DEBUG_OLD_NODES = nodes
+                print(f"({self.addr}) Traffic: Receiving from {addr} - Sending to: {nodes}")
             
             if not nodes and addr != self.addr: # addr != self.addr is for server loopback
                 Thread(target=self.update_stream_from_node, args=(routing_table.stream, addr, 0)).start()
@@ -359,16 +366,15 @@ class ONode:
         for stream, routing_table in self.routing_tables.items():
             prev_node = routing_table.prev_node # Force access
             next_nodes = routing_table.next_nodes # Force access
-            print(f"Closing {stream} - {prev_node}")
+            print(f"({self.addr}) Closing {stream} from {prev_node}")
             if prev_node and next_nodes:
                 t = Thread(target=self.update_stream_from_node, args=(stream, prev_node, 0))
                 t.start()
                 threads.append(t)
 
-        print("Joining")
         for t in threads:
             t.join()
-        print("Joined")
+
         _exit(0)
         
 

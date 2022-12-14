@@ -1,7 +1,7 @@
 import json
 import socket
 
-from threading import Thread, Lock
+from threading import Thread
 
 JSON_FILE = "ips_adj.json"
 
@@ -20,11 +20,7 @@ class BootStrap:
         self.nodes = info.get('Nodes')
         self.adjacents = info.get('Adjacents')
         self.bootstrap_addr = bootstrap_addr
-
-        host = next(addrs[0] for addrs in self.nodes.values() if bootstrap_addr in addrs)
         
-        self.addrs_connected = {host} 
-        self.lock = Lock()
 
     def get_addr_adjacents(self, addr):
         node = next(node for node, addrs in self.nodes.items() if addr in addrs)
@@ -42,14 +38,14 @@ class BootStrap:
         }
 
     def run(self):
-        print("Listening...")
+        print("Bootstrapper: Listening...")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((self.bootstrap_addr, BOOTSTRAP_PORT))
             s.listen()
 
             while True:
                 conn, addr_port = s.accept()
-                print('Connected to '+ str(addr_port[0]))
+                print('Bootstrapper: IP Connection - '+ str(addr_port[0]))
                 Thread(target=self.talk_to_conn, args=(conn, addr_port[0])).start()
                 
 
@@ -60,10 +56,6 @@ class BootStrap:
             
             data = json.dumps(info)
             conn.sendall(data.encode())
-
-            with self.lock:
-                self.addrs_connected.add(info['addr'])
-                print(f"{len(self.addrs_connected)}  - {len(self.nodes)}")
 
 
     
