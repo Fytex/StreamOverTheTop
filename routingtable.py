@@ -1,5 +1,8 @@
 from read_write_lock import get_RWLocks, read_lock, write_lock
 
+BOOST_STD_DEV = 0.1 # 10%
+TIME_MIN_MARGIN = 50 * (10**3) # 50ms
+
 class UpdateStatus:
     NOTHING = 0
     UPDATED = 1
@@ -61,7 +64,21 @@ class RoutingTable:
                 return (UpdateStatus.MONITOR, None)
 
             def check():
-                return len(self.path) > len(new_path)
+                print(f"\n\n\n\n\n\n\n\n\n{self.delta_server}\n{new_delta_server}\n\n\n\n\n")
+                if self.delta_server < TIME_MIN_MARGIN and new_delta_server < TIME_MIN_MARGIN:
+                    return len(self.path) > len(new_path)
+
+                
+                boost = (self.delta_server - new_delta_server) / self.delta_server
+
+                print(f"\n\n\n\n\n\n{boost}\nOld:{self.delta_server}\nNew:{new_delta_server}\n\n\n\n\n\n")
+
+                if boost > BOOST_STD_DEV:
+                    return True
+                elif boost > -BOOST_STD_DEV:
+                    return len(self.path) > len(new_path)
+                else:
+                    return False
             
             print(self.path)
             print(new_path)

@@ -214,7 +214,14 @@ class ONode:
         datetime_current = datetime.utcnow()
         delta = datetime_current - datetime_origin
 
+        print(datetime_origin)
+        print(datetime_current)
+        
+
         delta_micro = int(delta.total_seconds()) * 1000000 + delta.microseconds
+        print(delta.total_seconds())
+        print(delta.microseconds)
+        print(delta_micro)
         
         value['delta_server'] += delta_micro
         
@@ -278,6 +285,7 @@ class ONode:
                 info['value']['datetime_origin'] = datetime.utcnow().strftime(DATETIME_FMT)
             
             data = json.dumps(info)
+            print(data)
             s.sendall(data.encode())
 
 
